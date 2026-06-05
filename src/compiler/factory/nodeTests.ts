@@ -57,6 +57,7 @@ import {
     ExpressionStatement,
     ExpressionWithTypeArguments,
     ExternalModuleReference,
+    ExternDeclaration,
     ForInStatement,
     ForOfStatement,
     ForStatement,
@@ -819,6 +820,10 @@ export function isEnumDeclaration(node: Node): node is EnumDeclaration {
 
 export function isModuleDeclaration(node: Node): node is ModuleDeclaration {
     return node.kind === SyntaxKind.ModuleDeclaration;
+}
+
+export function isExternDeclaration(node: Node): node is ExternDeclaration {
+    return node.kind === SyntaxKind.ExternDeclaration;
 }
 
 export function isModuleBlock(node: Node): node is ModuleBlock {

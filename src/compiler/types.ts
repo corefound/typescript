@@ -151,6 +151,7 @@ export const enum SyntaxKind {
     ElseKeyword,
     EnumKeyword,
     ExportKeyword,
+    ExternKeyword,
     ExtendsKeyword,
     FalseKeyword,
     FinallyKeyword,
@@ -338,6 +339,7 @@ export const enum SyntaxKind {
     TypeAliasDeclaration,
     EnumDeclaration,
     ModuleDeclaration,
+    ExternDeclaration,
     ModuleBlock,
     CaseBlock,
     NamespaceExportDeclaration,
@@ -606,6 +608,7 @@ export type KeywordSyntaxKind =
     | SyntaxKind.ElseKeyword
     | SyntaxKind.EnumKeyword
     | SyntaxKind.ExportKeyword
+    | SyntaxKind.ExternKeyword
     | SyntaxKind.ExtendsKeyword
     | SyntaxKind.FalseKeyword
     | SyntaxKind.FinallyKeyword
@@ -1156,6 +1159,7 @@ export type HasChildren =
     | TypeAliasDeclaration
     | EnumDeclaration
     | ModuleDeclaration
+    | ExternDeclaration
     | ModuleBlock
     | CaseBlock
     | NamespaceExportDeclaration
@@ -1240,6 +1244,7 @@ export type HasJSDoc =
     | MethodDeclaration
     | MethodSignature
     | ModuleDeclaration
+    | ExternDeclaration
     | NamedTupleMember
     | NamespaceExportDeclaration
     | ObjectLiteralExpression
@@ -1349,6 +1354,7 @@ export type HasIllegalDecorators =
     | TypeAliasDeclaration
     | EnumDeclaration
     | ModuleDeclaration
+    | ExternDeclaration
     | ImportEqualsDeclaration
     | ImportDeclaration
     | NamespaceExportDeclaration
@@ -1380,6 +1386,7 @@ export type HasModifiers =
     | TypeAliasDeclaration
     | EnumDeclaration
     | ModuleDeclaration
+    | ExternDeclaration
     | ImportEqualsDeclaration
     | ImportDeclaration
     | ExportAssignment
@@ -3635,6 +3642,19 @@ export interface ModuleDeclaration extends DeclarationStatement, JSDocContainer,
     readonly name: ModuleName;
     readonly body?: ModuleBody | JSDocNamespaceDeclaration;
 }
+
+export interface ExternDeclaration extends DeclarationStatement, JSDocContainer {
+    readonly kind: SyntaxKind.ExternDeclaration;
+    readonly parent: SourceFile;
+    readonly modifiers?: NodeArray<ModifierLike>;
+    readonly name: Identifier;
+    readonly fileSpecifier: Expression;
+    readonly members: NodeArray<ExternElement>;
+}
+
+export type ExternElement =
+    | TypeElement
+    | Statement;
 
 export type NamespaceBody =
     | ModuleBlock
@@ -9080,6 +9100,8 @@ export interface NodeFactory {
     updateEnumDeclaration(node: EnumDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier, members: readonly EnumMember[]): EnumDeclaration;
     createModuleDeclaration(modifiers: readonly ModifierLike[] | undefined, name: ModuleName, body: ModuleBody | undefined, flags?: NodeFlags): ModuleDeclaration;
     updateModuleDeclaration(node: ModuleDeclaration, modifiers: readonly ModifierLike[] | undefined, name: ModuleName, body: ModuleBody | undefined): ModuleDeclaration;
+    createExternDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, fileSpecifier: Expression, members: readonly ExternElement[]): ExternDeclaration;
+    updateExternDeclaration(node: ExternDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier, fileSpecifier: Expression, members: readonly ExternElement[]): ExternDeclaration;
     createModuleBlock(statements: readonly Statement[]): ModuleBlock;
     updateModuleBlock(node: ModuleBlock, statements: readonly Statement[]): ModuleBlock;
     createCaseBlock(clauses: readonly CaseOrDefaultClause[]): CaseBlock;

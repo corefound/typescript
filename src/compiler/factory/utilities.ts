@@ -1131,6 +1131,7 @@ export function canHaveIllegalDecorators(node: Node): node is HasIllegalDecorato
         || kind === SyntaxKind.TypeAliasDeclaration
         || kind === SyntaxKind.EnumDeclaration
         || kind === SyntaxKind.ModuleDeclaration
+        || kind === SyntaxKind.ExternDeclaration
         || kind === SyntaxKind.ImportEqualsDeclaration
         || kind === SyntaxKind.ImportDeclaration
         || kind === SyntaxKind.NamespaceExportDeclaration

@@ -52239,6 +52239,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
             case SyntaxKind.MethodSignature:
             case SyntaxKind.IndexSignature:
             case SyntaxKind.ModuleDeclaration:
+            case SyntaxKind.ExternDeclaration:
             case SyntaxKind.ImportDeclaration:
             case SyntaxKind.ImportEqualsDeclaration:
             case SyntaxKind.ExportDeclaration:

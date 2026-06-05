@@ -85,6 +85,8 @@ import {
     ExpressionWithTypeArguments,
     Extension,
     ExternalModuleReference,
+    ExternDeclaration,
+    ExternElement,
     fileExtensionIs,
     findIndex,
     firstOrUndefined,
@@ -924,6 +926,12 @@ const forEachChildTable: ForEachChildTable = {
         return visitNodes(cbNode, cbNodes, node.modifiers) ||
             visitNode(cbNode, node.name) ||
             visitNode(cbNode, node.body);
+    },
+    [SyntaxKind.ExternDeclaration]: function forEachChildInExternDeclaration<T>(node: ExternDeclaration, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
+        return visitNodes(cbNode, cbNodes, node.modifiers) ||
+            visitNode(cbNode, node.name) ||
+            visitNode(cbNode, node.fileSpecifier) ||
+            visitNodes(cbNode, cbNodes, node.members);
     },
     [SyntaxKind.ImportEqualsDeclaration]: function forEachChildInImportEqualsDeclaration<T>(node: ImportEqualsDeclaration, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
         return visitNodes(cbNode, cbNodes, node.modifiers) ||
@@ -3343,6 +3351,7 @@ namespace Parser {
                 case SyntaxKind.ExportDeclaration:
                 case SyntaxKind.ExportAssignment:
                 case SyntaxKind.ModuleDeclaration:
+                case SyntaxKind.ExternDeclaration:
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
                 case SyntaxKind.EnumDeclaration:
@@ -7204,6 +7213,7 @@ namespace Parser {
                 case SyntaxKind.InterfaceKeyword:
                 case SyntaxKind.TypeKeyword:
                 case SyntaxKind.DeferKeyword:
+                case SyntaxKind.ExternKeyword:
                     return nextTokenIsIdentifierOnSameLine();
                 case SyntaxKind.ModuleKeyword:
                 case SyntaxKind.NamespaceKeyword:
@@ -7310,6 +7320,7 @@ namespace Parser {
             case SyntaxKind.TypeKeyword:
             case SyntaxKind.GlobalKeyword:
             case SyntaxKind.DeferKeyword:
+            case SyntaxKind.ExternKeyword:
                 // When these don't start a declaration, they're an identifier in an expression statement
                 return true;
 
@@ -7452,6 +7463,7 @@ namespace Parser {
             case SyntaxKind.StaticKeyword:
             case SyntaxKind.ReadonlyKeyword:
             case SyntaxKind.GlobalKeyword:
+            case SyntaxKind.ExternKeyword:
                 if (isStartOfDeclaration()) {
                     return parseDeclaration();
                 }
@@ -7527,6 +7539,8 @@ namespace Parser {
                 return parseModuleDeclaration(pos, hasJSDoc, modifiersIn);
             case SyntaxKind.ImportKeyword:
                 return parseImportDeclarationOrImportEqualsDeclaration(pos, hasJSDoc, modifiersIn);
+            case SyntaxKind.ExternKeyword:
+                return parseExternDeclaration(pos, hasJSDoc, modifiersIn);
             case SyntaxKind.ExportKeyword:
                 nextToken();
                 switch (token()) {
@@ -8351,6 +8365,55 @@ namespace Parser {
             }
         }
         return parseModuleOrNamespaceDeclaration(pos, hasJSDoc, modifiersIn, flags);
+    }
+
+    function parseExternDeclaration(pos: number, hasJSDoc: boolean, modifiers: NodeArray<ModifierLike> | undefined): ExternDeclaration {
+        parseExpected(SyntaxKind.ExternKeyword);
+        const name = parseIdentifier();
+        parseExpected(SyntaxKind.FromKeyword);
+        const fileSpecifier = parseExternFileSpecifier();
+        const members = parseExternMembers();
+        const node = factory.createExternDeclaration(modifiers, name, fileSpecifier, members);
+        return withJSDoc(finishNode(node, pos), hasJSDoc);
+    }
+
+    function parseExternFileSpecifier(): Expression {
+        return token() === SyntaxKind.StringLiteral ? parseLiteralNode() : parseExpression();
+    }
+
+    function parseExternMembers(): NodeArray<ExternElement> {
+        if (!parseExpected(SyntaxKind.OpenBraceToken)) {
+            return createMissingList<ExternElement>();
+        }
+
+        const members: ExternElement[] = [];
+        const membersPos = getNodePos();
+
+        while (token() !== SyntaxKind.CloseBraceToken && token() !== SyntaxKind.EndOfFileToken) {
+            if (lookAhead(isTypeMemberStart)) {
+                members.push(parseTypeMember());
+            }
+            else if (isStartOfStatement()) {
+                members.push(parseStatement());
+            }
+            else {
+                parseErrorAtCurrentToken(Diagnostics.Property_or_signature_expected);
+                skipInvalidExternMember();
+            }
+        }
+
+        parseExpected(SyntaxKind.CloseBraceToken);
+        return createNodeArray(members, membersPos);
+    }
+
+    function skipInvalidExternMember() {
+        while (token() !== SyntaxKind.CloseBraceToken && token() !== SyntaxKind.EndOfFileToken && token() !== SyntaxKind.SemicolonToken) {
+            nextToken();
+            if (scanner.hasPrecedingLineBreak() && lookAhead(isTypeMemberStart)) {
+                return;
+            }
+        }
+        parseOptional(SyntaxKind.SemicolonToken);
     }
 
     function isExternalModuleReference() {

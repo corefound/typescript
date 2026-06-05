@@ -34,6 +34,7 @@ export function canHaveModifiers(node: Node): node is HasModifiers {
         || kind === SyntaxKind.TypeAliasDeclaration
         || kind === SyntaxKind.EnumDeclaration
         || kind === SyntaxKind.ModuleDeclaration
+        || kind === SyntaxKind.ExternDeclaration
         || kind === SyntaxKind.ImportEqualsDeclaration
         || kind === SyntaxKind.ImportDeclaration
         || kind === SyntaxKind.ExportAssignment

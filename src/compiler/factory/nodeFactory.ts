@@ -89,6 +89,8 @@ import {
     ExpressionStatement,
     ExpressionWithTypeArguments,
     ExternalModuleReference,
+    ExternDeclaration,
+    ExternElement,
     FalseLiteral,
     FileReference,
     findUseStrictPrologue,
@@ -165,6 +167,7 @@ import {
     isExportAssignment,
     isExportDeclaration,
     isExternalModuleReference,
+    isExternDeclaration,
     isFunctionDeclaration,
     isFunctionExpression,
     isGeneratedIdentifier,
@@ -757,6 +760,8 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
         updateEnumDeclaration,
         createModuleDeclaration,
         updateModuleDeclaration,
+        createExternDeclaration,
+        updateExternDeclaration,
         createModuleBlock,
         updateModuleBlock,
         createCaseBlock,
@@ -4584,6 +4589,44 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
     }
 
     // @api
+    function createExternDeclaration(
+        modifiers: readonly ModifierLike[] | undefined,
+        name: string | Identifier,
+        fileSpecifier: Expression,
+        members: readonly ExternElement[],
+    ) {
+        const node = createBaseDeclaration<ExternDeclaration>(SyntaxKind.ExternDeclaration);
+        node.modifiers = asNodeArray(modifiers);
+        node.name = asName(name);
+        node.fileSpecifier = fileSpecifier;
+        node.members = createNodeArray(members);
+        node.transformFlags |= propagateChildrenFlags(node.modifiers) |
+            propagateChildFlags(node.name) |
+            propagateChildFlags(node.fileSpecifier) |
+            propagateChildrenFlags(node.members) |
+            TransformFlags.ContainsTypeScript;
+
+        node.jsDoc = undefined; // initialized by parser (JsDocContainer)
+        return node;
+    }
+
+    // @api
+    function updateExternDeclaration(
+        node: ExternDeclaration,
+        modifiers: readonly ModifierLike[] | undefined,
+        name: Identifier,
+        fileSpecifier: Expression,
+        members: readonly ExternElement[],
+    ) {
+        return node.modifiers !== modifiers
+                || node.name !== name
+                || node.fileSpecifier !== fileSpecifier
+                || node.members !== members
+            ? update(createExternDeclaration(modifiers, name, fileSpecifier, members), node)
+            : node;
+    }
+
+    // @api
     function createModuleBlock(statements: readonly Statement[]) {
         const node = createBaseNode<ModuleBlock>(SyntaxKind.ModuleBlock);
         node.statements = createNodeArray(statements);
@@ -7093,6 +7136,7 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
             isTypeAliasDeclaration(node) ? updateTypeAliasDeclaration(node, modifierArray, node.name, node.typeParameters, node.type) :
             isEnumDeclaration(node) ? updateEnumDeclaration(node, modifierArray, node.name, node.members) :
             isModuleDeclaration(node) ? updateModuleDeclaration(node, modifierArray, node.name, node.body) :
+            isExternDeclaration(node) ? updateExternDeclaration(node, modifierArray, node.name, node.fileSpecifier, node.members) :
             isImportEqualsDeclaration(node) ? updateImportEqualsDeclaration(node, modifierArray, node.isTypeOnly, node.name, node.moduleReference) :
             isImportDeclaration(node) ? updateImportDeclaration(node, modifierArray, node.importClause, node.moduleSpecifier, node.attributes) :
             isExportAssignment(node) ? updateExportAssignment(node, modifierArray, node.expression) :

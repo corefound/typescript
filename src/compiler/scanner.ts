@@ -157,6 +157,7 @@ export const textToKeywordObj: MapLike<KeywordSyntaxKind> = {
     else: SyntaxKind.ElseKeyword,
     enum: SyntaxKind.EnumKeyword,
     export: SyntaxKind.ExportKeyword,
+    extern: SyntaxKind.ExternKeyword,
     extends: SyntaxKind.ExtendsKeyword,
     false: SyntaxKind.FalseKeyword,
     finally: SyntaxKind.FinallyKeyword,

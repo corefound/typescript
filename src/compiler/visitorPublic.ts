@@ -3,6 +3,7 @@ import {
     Debug,
     EmitFlags,
     Expression,
+    ExternElement,
     factory,
     FunctionBody,
     getEmitFlags,
@@ -617,6 +618,10 @@ type VisitEachChildFunction<T extends Node> = (node: T, visitor: Visitor, contex
 //
 // This is then used as the expected type for `visitEachChildTable`.
 type VisitEachChildTable = { [TNode in HasChildren as TNode["kind"]]: VisitEachChildFunction<TNode>; };
+
+function isExternElement(node: Node): node is ExternElement {
+    return isTypeElement(node) || isStatement(node);
+}
 
 // NOTE: Before you can add a new method to `visitEachChildTable`, you must first ensure the `Node` subtype you
 //       wish to add is defined in the `HasChildren` union in types.ts.
@@ -1486,6 +1491,16 @@ const visitEachChildTable: VisitEachChildTable = {
             nodesVisitor(node.modifiers, visitor, isModifierLike),
             Debug.checkDefined(nodeVisitor(node.name, visitor, isModuleName)),
             nodeVisitor(node.body, visitor, isModuleBody),
+        );
+    },
+
+    [SyntaxKind.ExternDeclaration]: function visitEachChildOfExternDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+        return context.factory.updateExternDeclaration(
+            node,
+            nodesVisitor(node.modifiers, visitor, isModifierLike),
+            Debug.checkDefined(nodeVisitor(node.name, visitor, isIdentifier)),
+            Debug.checkDefined(nodeVisitor(node.fileSpecifier, visitor, isExpression)),
+            nodesVisitor(node.members, visitor, isExternElement),
         );
     },
 
