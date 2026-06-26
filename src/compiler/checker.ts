@@ -52267,6 +52267,7 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         return findFirstModifierExcept(node, SyntaxKind.AbstractKeyword);
                     case SyntaxKind.ClassExpression:
                     case SyntaxKind.InterfaceDeclaration:
+                    case SyntaxKind.StructDeclaration:
                     case SyntaxKind.TypeAliasDeclaration:
                         return find(node.modifiers, isModifier);
                     case SyntaxKind.VariableStatement:

@@ -195,6 +195,9 @@ import {
     StringLiteral,
     SuperExpression,
     SwitchStatement,
+    StructDeclaration,
+    StructFieldDeclaration,
+    StructFunctionDeclaration,
     SyntaxKind,
     SyntaxList,
     SyntheticExpression,
@@ -804,6 +807,18 @@ export function isFunctionDeclaration(node: Node): node is FunctionDeclaration {
 
 export function isClassDeclaration(node: Node): node is ClassDeclaration {
     return node.kind === SyntaxKind.ClassDeclaration;
+}
+
+export function isStructDeclaration(node: Node): node is StructDeclaration {
+    return node.kind === SyntaxKind.StructDeclaration;
+}
+
+export function isStructFieldDeclaration(node: Node): node is StructFieldDeclaration {
+    return node.kind === SyntaxKind.StructFieldDeclaration;
+}
+
+export function isStructFunctionDeclaration(node: Node): node is StructFunctionDeclaration {
+    return node.kind === SyntaxKind.StructFunctionDeclaration;
 }
 
 export function isInterfaceDeclaration(node: Node): node is InterfaceDeclaration {

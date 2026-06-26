@@ -196,6 +196,7 @@ export const textToKeywordObj: MapLike<KeywordSyntaxKind> = {
     satisfies: SyntaxKind.SatisfiesKeyword,
     set: SyntaxKind.SetKeyword,
     static: SyntaxKind.StaticKeyword,
+    struct: SyntaxKind.StructKeyword,
     string: SyntaxKind.StringKeyword,
     super: SyntaxKind.SuperKeyword,
     switch: SyntaxKind.SwitchKeyword,

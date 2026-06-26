@@ -2255,6 +2255,7 @@ export function isDeclarationWithTypeParameterChildren(node: Node): node is Decl
         case SyntaxKind.JSDocFunctionType:
         case SyntaxKind.ClassDeclaration:
         case SyntaxKind.ClassExpression:
+        case SyntaxKind.StructDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.JSDocTemplateTag:
@@ -11675,9 +11676,10 @@ export function createNameResolver({
                         }
                     }
                     break;
-                case SyntaxKind.ClassDeclaration:
-                case SyntaxKind.ClassExpression:
-                case SyntaxKind.InterfaceDeclaration:
+        case SyntaxKind.ClassDeclaration:
+        case SyntaxKind.ClassExpression:
+        case SyntaxKind.StructDeclaration:
+        case SyntaxKind.InterfaceDeclaration:
                     // The below is used to lookup type parameters within a class or interface, as they are added to the class/interface locals
                     // These can never be latebound, so the symbol's raw members are sufficient. `getMembersOfNode` cannot be used, as it would
                     // trigger resolving late-bound names, which we may already be in the process of doing while we're here!

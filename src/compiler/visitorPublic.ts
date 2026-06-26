@@ -27,6 +27,7 @@ import {
     isCatchClause,
     isClassElement,
     isColonToken,
+    isStructMember,
     isConciseBody,
     isDotDotDotToken,
     isElementAccessChain,
@@ -1452,6 +1453,35 @@ const visitEachChildTable: VisitEachChildTable = {
             nodesVisitor(node.typeParameters, visitor, isTypeParameterDeclaration),
             nodesVisitor(node.heritageClauses, visitor, isHeritageClause),
             nodesVisitor(node.members, visitor, isClassElement),
+        );
+    },
+
+    [SyntaxKind.StructDeclaration]: function visitEachChildOfStructDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+        return context.factory.updateStructDeclaration(
+            node,
+            nodesVisitor(node.modifiers, visitor, isModifierLike),
+            nodeVisitor(node.name, visitor, isIdentifier)!,
+            nodesVisitor(node.typeParameters, visitor, isTypeParameterDeclaration),
+            nodeVisitor(node.extendsType, visitor, isTypeNode),
+            nodesVisitor(node.members, visitor, isStructMember),
+        );
+    },
+
+    [SyntaxKind.StructFieldDeclaration]: function visitEachChildOfStructFieldDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+        return context.factory.updateStructFieldDeclaration(
+            node,
+            Debug.checkDefined(nodeVisitor(node.name, visitor, isPropertyName)),
+            nodeVisitor(node.type, visitor, isTypeNode),
+        );
+    },
+
+    [SyntaxKind.StructFunctionDeclaration]: function visitEachChildOfStructFunctionDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+        return context.factory.updateStructFunctionDeclaration(
+            node,
+            Debug.checkDefined(nodeVisitor(node.name, visitor, isPropertyName)),
+            visitParameterList(node.parameters, visitor, context, nodesVisitor),
+            nodeVisitor(node.type, visitor, isTypeNode),
+            visitFunctionBody(node.body, visitor, context, nodeVisitor),
         );
     },
 

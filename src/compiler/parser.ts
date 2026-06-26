@@ -397,6 +397,10 @@ import {
     VariableDeclaration,
     VariableDeclarationList,
     VariableStatement,
+    StructDeclaration,
+    StructFieldDeclaration,
+    StructFunctionDeclaration,
+    StructMember,
     VoidExpression,
     WhileStatement,
     WithStatement,
@@ -900,6 +904,9 @@ const forEachChildTable: ForEachChildTable = {
     },
     [SyntaxKind.ClassDeclaration]: forEachChildInClassDeclarationOrExpression,
     [SyntaxKind.ClassExpression]: forEachChildInClassDeclarationOrExpression,
+    [SyntaxKind.StructDeclaration]: forEachChildInStructDeclaration,
+    [SyntaxKind.StructFieldDeclaration]: forEachChildInStructFieldDeclaration,
+    [SyntaxKind.StructFunctionDeclaration]: forEachChildInStructFunctionDeclaration,
     [SyntaxKind.InterfaceDeclaration]: function forEachChildInInterfaceDeclaration<T>(node: InterfaceDeclaration, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
         return visitNodes(cbNode, cbNodes, node.modifiers) ||
             visitNode(cbNode, node.name) ||
@@ -1185,6 +1192,26 @@ function forEachChildInClassDeclarationOrExpression<T>(node: ClassDeclaration | 
         visitNodes(cbNode, cbNodes, node.typeParameters) ||
         visitNodes(cbNode, cbNodes, node.heritageClauses) ||
         visitNodes(cbNode, cbNodes, node.members);
+}
+
+function forEachChildInStructDeclaration<T>(node: StructDeclaration, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
+    return visitNodes(cbNode, cbNodes, node.modifiers) ||
+        visitNode(cbNode, node.name) ||
+        visitNodes(cbNode, cbNodes, node.typeParameters) ||
+        visitNode(cbNode, node.extendsType) ||
+        visitNodes(cbNode, cbNodes, node.members);
+}
+
+function forEachChildInStructFieldDeclaration<T>(node: StructFieldDeclaration, cbNode: (node: Node) => T | undefined, _cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
+    return visitNode(cbNode, node.name) ||
+        visitNode(cbNode, node.type);
+}
+
+function forEachChildInStructFunctionDeclaration<T>(node: StructFunctionDeclaration, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
+    return visitNode(cbNode, node.name) ||
+        visitNodes(cbNode, cbNodes, node.parameters) ||
+        visitNode(cbNode, node.type) ||
+        visitNode(cbNode, node.body);
 }
 
 function forEachChildInNamedImportsOrExports<T>(node: NamedImports | NamedExports, cbNode: (node: Node) => T | undefined, cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
@@ -7212,6 +7239,7 @@ namespace Parser {
                 // could be legal, it would add complexity for very little gain.
                 case SyntaxKind.InterfaceKeyword:
                 case SyntaxKind.TypeKeyword:
+                case SyntaxKind.StructKeyword:
                 case SyntaxKind.DeferKeyword:
                 case SyntaxKind.ExternKeyword:
                     return nextTokenIsIdentifierOnSameLine();
@@ -7415,6 +7443,8 @@ namespace Parser {
                 return parseFunctionDeclaration(getNodePos(), hasPrecedingJSDocComment(), /*modifiers*/ undefined);
             case SyntaxKind.ClassKeyword:
                 return parseClassDeclaration(getNodePos(), hasPrecedingJSDocComment(), /*modifiers*/ undefined);
+            case SyntaxKind.StructKeyword:
+                return parseStructDeclaration(getNodePos(), hasPrecedingJSDocComment(), /*modifiers*/ undefined);
             case SyntaxKind.IfKeyword:
                 return parseIfStatement();
             case SyntaxKind.DoKeyword:
@@ -7527,6 +7557,8 @@ namespace Parser {
                 return parseFunctionDeclaration(pos, hasJSDoc, modifiersIn);
             case SyntaxKind.ClassKeyword:
                 return parseClassDeclaration(pos, hasJSDoc, modifiersIn);
+            case SyntaxKind.StructKeyword:
+                return parseStructDeclaration(pos, hasJSDoc, modifiersIn);
             case SyntaxKind.InterfaceKeyword:
                 return parseInterfaceDeclaration(pos, hasJSDoc, modifiersIn);
             case SyntaxKind.TypeKeyword:
@@ -8248,6 +8280,73 @@ namespace Parser {
 
     function parseClassMembers(): NodeArray<ClassElement> {
         return parseList(ParsingContext.ClassMembers, parseClassElement);
+    }
+
+    function parseStructDeclaration(pos: number, hasJSDoc: boolean, modifiers: NodeArray<ModifierLike> | undefined): StructDeclaration {
+        parseExpected(SyntaxKind.StructKeyword);
+        const name = parseIdentifier();
+        const typeParameters = parseTypeParameters();
+        const extendsType = parseOptional(SyntaxKind.ExtendsKeyword) ? parseType() : undefined;
+        let members: NodeArray<StructMember>;
+        if (parseExpected(SyntaxKind.OpenBraceToken)) {
+            members = parseStructMembers();
+            parseExpected(SyntaxKind.CloseBraceToken);
+        }
+        else {
+            members = createMissingList<StructMember>();
+        }
+        const node = factory.createStructDeclaration(modifiers, name, typeParameters, extendsType, members);
+        return withJSDoc(finishNode(node, pos), hasJSDoc);
+    }
+
+    function parseStructMembers(): NodeArray<StructMember> {
+        const members: StructMember[] = [];
+        const membersPos = getNodePos();
+        while (token() !== SyntaxKind.CloseBraceToken && token() !== SyntaxKind.EndOfFileToken) {
+            if (token() === SyntaxKind.SemicolonToken) {
+                nextToken();
+                continue;
+            }
+            const member = parseStructMember();
+            if (member) {
+                members.push(member);
+            }
+        }
+        return createNodeArray(members, membersPos);
+    }
+
+    function parseStructMember(): StructMember | undefined {
+        const pos = getNodePos();
+
+        if (!isStructMemberStart()) {
+            return undefined;
+        }
+
+        const name = parsePropertyName();
+
+        if (token() === SyntaxKind.OpenParenToken || token() === SyntaxKind.LessThanToken) {
+            // Function-like member: name(), name<T>()
+            return parseStructFunctionMember(pos, name);
+        }
+
+        // Field member: name: Type;
+        const type = parseTypeAnnotation();
+        parseSemicolon();
+        return finishNode(factory.createStructFieldDeclaration(name, type), pos);
+    }
+
+    function parseStructFunctionMember(pos: number, name: PropertyName): StructFunctionDeclaration {
+        const parameters = parseParameters(SignatureFlags.None);
+        const type = parseReturnType(SyntaxKind.ColonToken, /*isType*/ false);
+        const body = parseFunctionBlockOrSemicolon(SignatureFlags.None);
+        return finishNode(factory.createStructFunctionDeclaration(name, parameters, type, body), pos);
+    }
+
+    function isStructMemberStart(): boolean {
+        if (isLiteralPropertyName()) {
+            return true;
+        }
+        return false;
     }
 
     function parseInterfaceDeclaration(pos: number, hasJSDoc: boolean, modifiers: NodeArray<ModifierLike> | undefined): InterfaceDeclaration {

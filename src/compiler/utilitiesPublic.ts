@@ -289,6 +289,7 @@ import {
     TypeOnlyImportDeclaration,
     TypeParameterDeclaration,
     TypeReferenceType,
+    StructMember,
     UnaryExpression,
     VariableDeclaration,
 } from "./_namespaces/ts.js";
@@ -1726,6 +1727,13 @@ export function isFunctionLikeKind(kind: SyntaxKind): boolean {
 /** @internal */
 export function isFunctionOrModuleBlock(node: Node): boolean {
     return isSourceFile(node) || isModuleBlock(node) || isBlock(node) && isFunctionLike(node.parent);
+}
+
+// Structs
+export function isStructMember(node: Node): node is StructMember {
+    const kind = node.kind;
+    return kind === SyntaxKind.StructFieldDeclaration
+        || kind === SyntaxKind.StructFunctionDeclaration;
 }
 
 // Classes

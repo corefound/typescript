@@ -154,6 +154,7 @@ import {
     isCallChain,
     isClassDeclaration,
     isClassExpression,
+    isStructDeclaration,
     isCommaListExpression,
     isCommaToken,
     isComputedPropertyName,
@@ -455,6 +456,10 @@ import {
     VariableDeclaration,
     VariableDeclarationList,
     VariableStatement,
+    StructDeclaration,
+    StructFieldDeclaration,
+    StructFunctionDeclaration,
+    StructMember,
     visitNode,
     VisitResult,
     VoidExpression,
@@ -752,6 +757,12 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
         updateFunctionDeclaration,
         createClassDeclaration,
         updateClassDeclaration,
+        createStructDeclaration,
+        updateStructDeclaration,
+        createStructFieldDeclaration,
+        updateStructFieldDeclaration,
+        createStructFunctionDeclaration,
+        updateStructFunctionDeclaration,
         createInterfaceDeclaration,
         updateInterfaceDeclaration,
         createTypeAliasDeclaration,
@@ -4438,6 +4449,116 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
     }
 
     // @api
+    function createStructDeclaration(
+        modifiers: readonly ModifierLike[] | undefined,
+        name: string | Identifier,
+        typeParameters: readonly TypeParameterDeclaration[] | undefined,
+        extendsType: TypeNode | undefined,
+        members: readonly StructMember[],
+    ) {
+        const node = createBaseDeclaration<StructDeclaration>(SyntaxKind.StructDeclaration);
+        node.modifiers = asNodeArray(modifiers);
+        node.name = asName(name) as Identifier;
+        node.typeParameters = asNodeArray(typeParameters);
+        node.extendsType = extendsType;
+        node.members = createNodeArray(members);
+
+        node.transformFlags = propagateChildrenFlags(node.modifiers) |
+            propagateNameFlags(node.name) |
+            propagateChildrenFlags(node.typeParameters) |
+            propagateChildFlags(node.extendsType) |
+            propagateChildrenFlags(node.members) |
+            (node.typeParameters || node.extendsType ? TransformFlags.ContainsTypeScript : TransformFlags.None);
+
+        node.jsDoc = undefined;
+        return node;
+    }
+
+    // @api
+    function updateStructDeclaration(
+        node: StructDeclaration,
+        modifiers: readonly ModifierLike[] | undefined,
+        name: Identifier,
+        typeParameters: readonly TypeParameterDeclaration[] | undefined,
+        extendsType: TypeNode | undefined,
+        members: readonly StructMember[],
+    ) {
+        return node.modifiers !== modifiers
+                || node.name !== name
+                || node.typeParameters !== typeParameters
+                || node.extendsType !== extendsType
+                || node.members !== members
+            ? update(createStructDeclaration(modifiers, name, typeParameters, extendsType, members), node)
+            : node;
+    }
+
+    // @api
+    function createStructFieldDeclaration(
+        name: string | PropertyName,
+        type: TypeNode | undefined,
+    ) {
+        const node = createBaseNode<StructFieldDeclaration>(SyntaxKind.StructFieldDeclaration);
+        node.name = asName(name);
+        node.type = type;
+
+        node.transformFlags = propagateNameFlags(node.name) |
+            propagateChildFlags(node.type) |
+            (node.type ? TransformFlags.ContainsTypeScript : TransformFlags.None);
+
+        return node;
+    }
+
+    // @api
+    function updateStructFieldDeclaration(
+        node: StructFieldDeclaration,
+        name: PropertyName,
+        type: TypeNode | undefined,
+    ) {
+        return node.name !== name || node.type !== type
+            ? update(createStructFieldDeclaration(name, type), node)
+            : node;
+    }
+
+    // @api
+    function createStructFunctionDeclaration(
+        name: string | PropertyName,
+        parameters: readonly ParameterDeclaration[],
+        type: TypeNode | undefined,
+        body: Block | undefined,
+    ) {
+        const node = createBaseDeclaration<StructFunctionDeclaration>(SyntaxKind.StructFunctionDeclaration);
+        node.name = asName(name);
+        node.parameters = createNodeArray(parameters);
+        node.type = type;
+        node.body = body;
+
+        node.transformFlags = propagateNameFlags(node.name) |
+            propagateChildrenFlags(node.parameters) |
+            propagateChildFlags(node.type) |
+            propagateChildFlags(node.body) |
+            (node.type ? TransformFlags.ContainsTypeScript : TransformFlags.None) |
+            TransformFlags.ContainsES2015;
+
+        return node;
+    }
+
+    // @api
+    function updateStructFunctionDeclaration(
+        node: StructFunctionDeclaration,
+        name: PropertyName,
+        parameters: readonly ParameterDeclaration[],
+        type: TypeNode | undefined,
+        body: Block | undefined,
+    ) {
+        return node.name !== name
+                || node.parameters !== parameters
+                || node.type !== type
+                || node.body !== body
+            ? update(createStructFunctionDeclaration(name, parameters, type, body), node)
+            : node;
+    }
+
+    // @api
     function createInterfaceDeclaration(
         modifiers: readonly ModifierLike[] | undefined,
         name: string | Identifier,
@@ -7135,6 +7256,7 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
             isInterfaceDeclaration(node) ? updateInterfaceDeclaration(node, modifierArray, node.name, node.typeParameters, node.heritageClauses, node.members) :
             isTypeAliasDeclaration(node) ? updateTypeAliasDeclaration(node, modifierArray, node.name, node.typeParameters, node.type) :
             isEnumDeclaration(node) ? updateEnumDeclaration(node, modifierArray, node.name, node.members) :
+            isStructDeclaration(node) ? updateStructDeclaration(node, modifierArray, node.name, node.typeParameters, node.extendsType, node.members) :
             isModuleDeclaration(node) ? updateModuleDeclaration(node, modifierArray, node.name, node.body) :
             isExternDeclaration(node) ? updateExternDeclaration(node, modifierArray, node.name, node.fileSpecifier, node.members) :
             isImportEqualsDeclaration(node) ? updateImportEqualsDeclaration(node, modifierArray, node.isTypeOnly, node.name, node.moduleReference) :

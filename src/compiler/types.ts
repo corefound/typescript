@@ -224,6 +224,7 @@ export const enum SyntaxKind {
     BigIntKeyword,
     OverrideKeyword,
     OfKeyword,
+    StructKeyword,
     DeferKeyword, // LastKeyword and LastToken and LastContextualKeyword
 
     // Parse tree nodes
@@ -335,6 +336,9 @@ export const enum SyntaxKind {
     VariableDeclarationList,
     FunctionDeclaration,
     ClassDeclaration,
+    StructDeclaration,
+    StructFieldDeclaration,
+    StructFunctionDeclaration,
     InterfaceDeclaration,
     TypeAliasDeclaration,
     EnumDeclaration,
@@ -643,6 +647,7 @@ export type KeywordSyntaxKind =
     | SyntaxKind.ReadonlyKeyword
     | SyntaxKind.OutKeyword
     | SyntaxKind.OverrideKeyword
+    | SyntaxKind.StructKeyword
     | SyntaxKind.RequireKeyword
     | SyntaxKind.ReturnKeyword
     | SyntaxKind.SatisfiesKeyword
@@ -1075,6 +1080,9 @@ export type HasChildren =
     | GetAccessorDeclaration
     | SetAccessorDeclaration
     | ClassStaticBlockDeclaration
+    | StructDeclaration
+    | StructFieldDeclaration
+    | StructFunctionDeclaration
     | CallSignatureDeclaration
     | ConstructSignatureDeclaration
     | IndexSignatureDeclaration
@@ -1155,6 +1163,7 @@ export type HasChildren =
     | VariableDeclarationList
     | FunctionDeclaration
     | ClassDeclaration
+    | StructDeclaration
     | InterfaceDeclaration
     | TypeAliasDeclaration
     | EnumDeclaration
@@ -1266,6 +1275,7 @@ export type HasJSDoc =
     | VariableDeclaration
     | VariableStatement
     | WhileStatement
+    | StructDeclaration
     | WithStatement;
 
 export type HasType =
@@ -1382,6 +1392,7 @@ export type HasModifiers =
     | VariableStatement
     | FunctionDeclaration
     | ClassDeclaration
+    | StructDeclaration
     | InterfaceDeclaration
     | TypeAliasDeclaration
     | EnumDeclaration
@@ -1420,6 +1431,7 @@ export type PrimitiveLiteral =
 export type IsContainer =
     | ClassExpression
     | ClassDeclaration
+    | StructDeclaration
     | EnumDeclaration
     | ObjectLiteralExpression
     | TypeLiteralNode
@@ -3543,6 +3555,7 @@ export type DeclarationWithTypeParameters =
 export type DeclarationWithTypeParameterChildren =
     | SignatureDeclaration
     | ClassLikeDeclaration
+    | StructDeclaration
     | InterfaceDeclaration
     | TypeAliasDeclaration
     | JSDocTemplateTag;
@@ -3565,6 +3578,33 @@ export interface ClassDeclaration extends ClassLikeDeclarationBase, DeclarationS
 export interface ClassExpression extends ClassLikeDeclarationBase, PrimaryExpression {
     readonly kind: SyntaxKind.ClassExpression;
     readonly modifiers?: NodeArray<ModifierLike>;
+}
+
+export interface StructDeclaration extends DeclarationStatement, JSDocContainer {
+    readonly kind: SyntaxKind.StructDeclaration;
+    readonly modifiers?: NodeArray<ModifierLike>;
+    readonly name: Identifier;
+    readonly typeParameters?: NodeArray<TypeParameterDeclaration>;
+    readonly extendsType?: TypeNode;
+    readonly members: NodeArray<StructMember>;
+}
+
+export type StructMember =
+    | StructFieldDeclaration
+    | StructFunctionDeclaration;
+
+export interface StructFieldDeclaration extends Node {
+    readonly kind: SyntaxKind.StructFieldDeclaration;
+    readonly name: PropertyName;
+    readonly type?: TypeNode;
+}
+
+export interface StructFunctionDeclaration extends NamedDeclaration {
+    readonly kind: SyntaxKind.StructFunctionDeclaration;
+    readonly name: PropertyName;
+    readonly parameters: NodeArray<ParameterDeclaration>;
+    readonly type?: TypeNode;
+    readonly body?: Block;
 }
 
 export type ClassLikeDeclaration =
@@ -5815,6 +5855,7 @@ export type LateVisibilityPaintedStatement =
     | AnyImportOrJsDocImport
     | VariableStatement
     | ClassDeclaration
+    | StructDeclaration
     | FunctionDeclaration
     | ModuleDeclaration
     | TypeAliasDeclaration
@@ -9092,6 +9133,12 @@ export interface NodeFactory {
     updateFunctionDeclaration(node: FunctionDeclaration, modifiers: readonly ModifierLike[] | undefined, asteriskToken: AsteriskToken | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: Block | undefined): FunctionDeclaration;
     createClassDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly ClassElement[]): ClassDeclaration;
     updateClassDeclaration(node: ClassDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly ClassElement[]): ClassDeclaration;
+    createStructDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, extendsType: TypeNode | undefined, members: readonly StructMember[]): StructDeclaration;
+    updateStructDeclaration(node: StructDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, extendsType: TypeNode | undefined, members: readonly StructMember[]): StructDeclaration;
+    createStructFieldDeclaration(name: string | PropertyName, type: TypeNode | undefined): StructFieldDeclaration;
+    updateStructFieldDeclaration(node: StructFieldDeclaration, name: PropertyName, type: TypeNode | undefined): StructFieldDeclaration;
+    createStructFunctionDeclaration(name: string | PropertyName, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: Block | undefined): StructFunctionDeclaration;
+    updateStructFunctionDeclaration(node: StructFunctionDeclaration, name: PropertyName, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: Block | undefined): StructFunctionDeclaration;
     createInterfaceDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly TypeElement[]): InterfaceDeclaration;
     updateInterfaceDeclaration(node: InterfaceDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly TypeElement[]): InterfaceDeclaration;
     createTypeAliasDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, type: TypeNode): TypeAliasDeclaration;

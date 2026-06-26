@@ -1734,6 +1734,17 @@ export function transformDeclarations(context: TransformationContext): Transform
                     })),
                 ));
             }
+            case SyntaxKind.StructDeclaration: {
+                const modifiers = factory.createNodeArray(ensureModifiers(input));
+                return cleanup(factory.updateStructDeclaration(
+                    input,
+                    modifiers,
+                    input.name,
+                    input.typeParameters,
+                    input.extendsType,
+                    input.members,
+                ));
+            }
         }
         // Anything left unhandled is an error, so this should be unreachable
         return Debug.assertNever(input, `Unhandled top-level node in declaration emit: ${Debug.formatSyntaxKind((input as Node).kind)}`);
@@ -1920,6 +1931,7 @@ function isPreservedDeclarationStatement(node: Node): node is ProcessedDeclarati
         case SyntaxKind.ImportEqualsDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.ClassDeclaration:
+        case SyntaxKind.StructDeclaration:
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.EnumDeclaration:
         case SyntaxKind.VariableStatement:
