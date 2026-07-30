@@ -4494,16 +4494,22 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
 
     // @api
     function createStructFieldDeclaration(
+        modifiers: readonly ModifierLike[] | undefined,
         name: string | PropertyName,
+        questionToken: QuestionToken | undefined,
         type: TypeNode | undefined,
     ) {
         const node = createBaseNode<StructFieldDeclaration>(SyntaxKind.StructFieldDeclaration);
+        node.modifiers = asNodeArray(modifiers);
         node.name = asName(name);
+        node.questionToken = questionToken;
         node.type = type;
 
-        node.transformFlags = propagateNameFlags(node.name) |
+        node.transformFlags = propagateChildrenFlags(node.modifiers) |
+            propagateNameFlags(node.name) |
+            propagateChildFlags(node.questionToken) |
             propagateChildFlags(node.type) |
-            (node.type ? TransformFlags.ContainsTypeScript : TransformFlags.None);
+            (node.modifiers || node.questionToken || node.type ? TransformFlags.ContainsTypeScript : TransformFlags.None);
 
         return node;
     }
@@ -4511,11 +4517,13 @@ export function createNodeFactory(flags: NodeFactoryFlags, baseFactory: BaseNode
     // @api
     function updateStructFieldDeclaration(
         node: StructFieldDeclaration,
+        modifiers: readonly ModifierLike[] | undefined,
         name: PropertyName,
+        questionToken: QuestionToken | undefined,
         type: TypeNode | undefined,
     ) {
-        return node.name !== name || node.type !== type
-            ? update(createStructFieldDeclaration(name, type), node)
+        return node.modifiers !== modifiers || node.name !== name || node.questionToken !== questionToken || node.type !== type
+            ? update(createStructFieldDeclaration(modifiers, name, questionToken, type), node)
             : node;
     }
 

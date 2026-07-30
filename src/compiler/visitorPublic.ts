@@ -1467,10 +1467,12 @@ const visitEachChildTable: VisitEachChildTable = {
         );
     },
 
-    [SyntaxKind.StructFieldDeclaration]: function visitEachChildOfStructFieldDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, _tokenVisitor) {
+    [SyntaxKind.StructFieldDeclaration]: function visitEachChildOfStructFieldDeclaration(node, visitor, context, nodesVisitor, nodeVisitor, tokenVisitor) {
         return context.factory.updateStructFieldDeclaration(
             node,
+            nodesVisitor(node.modifiers, visitor, isModifierLike),
             Debug.checkDefined(nodeVisitor(node.name, visitor, isPropertyName)),
+            tokenVisitor ? nodeVisitor(node.questionToken, tokenVisitor, isQuestionToken) : node.questionToken,
             nodeVisitor(node.type, visitor, isTypeNode),
         );
     },

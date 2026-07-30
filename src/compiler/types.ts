@@ -3595,7 +3595,9 @@ export type StructMember =
 
 export interface StructFieldDeclaration extends Node {
     readonly kind: SyntaxKind.StructFieldDeclaration;
+    readonly modifiers?: NodeArray<ModifierLike>;
     readonly name: PropertyName;
+    readonly questionToken?: QuestionToken;
     readonly type?: TypeNode;
 }
 
@@ -9135,8 +9137,8 @@ export interface NodeFactory {
     updateClassDeclaration(node: ClassDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier | undefined, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly ClassElement[]): ClassDeclaration;
     createStructDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, extendsType: TypeNode | undefined, members: readonly StructMember[]): StructDeclaration;
     updateStructDeclaration(node: StructDeclaration, modifiers: readonly ModifierLike[] | undefined, name: Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, extendsType: TypeNode | undefined, members: readonly StructMember[]): StructDeclaration;
-    createStructFieldDeclaration(name: string | PropertyName, type: TypeNode | undefined): StructFieldDeclaration;
-    updateStructFieldDeclaration(node: StructFieldDeclaration, name: PropertyName, type: TypeNode | undefined): StructFieldDeclaration;
+    createStructFieldDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | PropertyName, questionToken: QuestionToken | undefined, type: TypeNode | undefined): StructFieldDeclaration;
+    updateStructFieldDeclaration(node: StructFieldDeclaration, modifiers: readonly ModifierLike[] | undefined, name: PropertyName, questionToken: QuestionToken | undefined, type: TypeNode | undefined): StructFieldDeclaration;
     createStructFunctionDeclaration(name: string | PropertyName, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: Block | undefined): StructFunctionDeclaration;
     updateStructFunctionDeclaration(node: StructFunctionDeclaration, name: PropertyName, parameters: readonly ParameterDeclaration[], type: TypeNode | undefined, body: Block | undefined): StructFunctionDeclaration;
     createInterfaceDeclaration(modifiers: readonly ModifierLike[] | undefined, name: string | Identifier, typeParameters: readonly TypeParameterDeclaration[] | undefined, heritageClauses: readonly HeritageClause[] | undefined, members: readonly TypeElement[]): InterfaceDeclaration;

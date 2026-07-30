@@ -1203,7 +1203,9 @@ function forEachChildInStructDeclaration<T>(node: StructDeclaration, cbNode: (no
 }
 
 function forEachChildInStructFieldDeclaration<T>(node: StructFieldDeclaration, cbNode: (node: Node) => T | undefined, _cbNodes?: (nodes: NodeArray<Node>) => T | undefined): T | undefined {
-    return visitNode(cbNode, node.name) ||
+    return visitNodes(cbNode, _cbNodes, node.modifiers) ||
+        visitNode(cbNode, node.name) ||
+        visitNode(cbNode, node.questionToken) ||
         visitNode(cbNode, node.type);
 }
 
@@ -8311,6 +8313,10 @@ namespace Parser {
             if (member) {
                 members.push(member);
             }
+            else {
+                parseErrorAtCurrentToken(Diagnostics.Property_or_signature_expected);
+                nextToken();
+            }
         }
         return createNodeArray(members, membersPos);
     }
@@ -8322,6 +8328,7 @@ namespace Parser {
             return undefined;
         }
 
+        const modifiers = parseModifiers(/*allowDecorators*/ false);
         const name = parsePropertyName();
 
         if (token() === SyntaxKind.OpenParenToken || token() === SyntaxKind.LessThanToken) {
@@ -8329,10 +8336,11 @@ namespace Parser {
             return parseStructFunctionMember(pos, name);
         }
 
-        // Field member: name: Type;
+        // Field member: readonly? name?: Type;
+        const questionToken = parseOptionalToken(SyntaxKind.QuestionToken);
         const type = parseTypeAnnotation();
         parseSemicolon();
-        return finishNode(factory.createStructFieldDeclaration(name, type), pos);
+        return finishNode(factory.createStructFieldDeclaration(modifiers, name, questionToken, type), pos);
     }
 
     function parseStructFunctionMember(pos: number, name: PropertyName): StructFunctionDeclaration {
@@ -8343,10 +8351,7 @@ namespace Parser {
     }
 
     function isStructMemberStart(): boolean {
-        if (isLiteralPropertyName()) {
-            return true;
-        }
-        return false;
+        return lookAhead(isTypeMemberStart);
     }
 
     function parseInterfaceDeclaration(pos: number, hasJSDoc: boolean, modifiers: NodeArray<ModifierLike> | undefined): InterfaceDeclaration {
